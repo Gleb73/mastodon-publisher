@@ -1,0 +1,8 @@
+spring:
+  application:
+    name: post-gateway
+  profiles:
+    default: prod
+server:
+  port: 8082
+

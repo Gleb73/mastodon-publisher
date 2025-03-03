@@ -1,0 +1,51 @@
+mastodon:
+  api:
+    access-token: ${MASTODON_TOKEN}
+  retry:
+    max-attempts: ${MAX_ATTEMPTS:3}
+    delay-ms: ${DELAY_MS:500}
+    response-timeout-ms: ${RESPONSE_TIMEOUT_MS:5000}
+    connection-timeout-ms: ${CONNECTION_TIMEOUT_MS:5000}
+    enable-log: ${ENABLE_LOG:true}
+  socket:
+    max-connections: 50
+    duration-pending-ms: 3000
+    max-idle-time-ms: 6000
+
+
+spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:your_db_name}
+    username: ${DB_USER:your_db_user}
+    password: ${DB_PASSWORD:your_db_password}
+    driver-class-name: org.postgresql.Driver
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVER:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 10
+      properties:
+        retry.backoff.ms: 1000
+        enable.idempotence: false
+        max.in.flight.requests.per.connection: 5
+      batch-size: 16384
+      linger-ms: 5
+      buffer-memory: 33554432
+    topic:
+      mastodon-name: mastodon-post-events-topic
+      partitions: 5
+      replicas: 4
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: validate
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+logging:
+  level:
+    io:
+      netty: DEBUG

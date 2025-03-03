@@ -1,0 +1,88 @@
+services:
+  mastodon-connector:
+    image: gleb123/mastodon-connector:latest
+    container_name: mastodon-connection-app
+    environment:
+      MASTODON_TOKEN: ${MASTODON_TOKEN}
+      MAX_ATTEMPTS: 3
+      DELAY_MS: 500
+      RESPONSE_TIMEOUT_MS: 5000
+      CONNECTION_TIMEOUT_MS: 5000
+      ENABLE_LOG: "true"
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      KAFKA_SERVER: kafka:9092
+    ports:
+      - "8081:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - mastodon-network
+
+  post-gateway:
+    image: gleb123/post-gateway:latest
+    container_name: post-gateway-app
+    environment:
+      KAFKA_SERVER: kafka:9092
+    ports:
+      - "8082:8082"
+    depends_on:
+      mastodon-connector:
+        condition: service_started
+      kafka:
+        condition: service_started
+    networks:
+      - mastodon-network
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    platform: linux/arm64
+    networks:
+      - mastodon-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  kafka:
+    image: bitnami/kafka:latest
+    ports:
+      - "9092:9092"
+    container_name: kafka
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_KRAFT_CLUSTER_ID: r4zt_wrqTRuT7W2NJsB_GA
+      KAFKA_CFG_PROCESS_ROLES: broker,controller
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@kafka:9091
+      KAFKA_CFG_LISTENERS: PLAINTEXT://:9090,CONTROLLER://:9091,EXTERNAL://:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9090,EXTERNAL://${HOSTNAME:-kafka}:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CFG_INNER_BROKER_LISTENER_NAME: PLAINTEXT
+    volumes:
+      - /Users/htarasevych/IdeaProjects/mastodon-publisher/docker-composes/volumes/:/bitnami/kafka
+    networks:
+      - mastodon-network
+
+networks:
+  mastodon-network:
+    driver: bridge
+volumes:
+  postgres_data:

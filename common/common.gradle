@@ -1,0 +1,41 @@
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(23)
+    }
+}
+
+ext {
+    versions = [
+            springBoot     : '3.0.1',
+            lombok        : '1.18.30',
+            junit          : '5.4.0',
+            springKafka    : '3.3.1',
+            mockito        : '4.6.1',
+            springWebSocket: '3.1.2',
+            dnsNativeMacos : '4.1.118.Final:osx-aarch_64'
+    ]
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation "org.springframework.boot:spring-boot-starter-web:${versions.springBoot}"
+    implementation "org.springframework.boot:spring-boot-starter-logging:${versions.springBoot}"
+    implementation "org.springframework.kafka:spring-kafka:${versions.springKafka}"
+    implementation "org.projectlombok:lombok:${versions.lombok}"
+    implementation "org.springframework.boot:spring-boot-starter-websocket:${versions.springWebSocket}"
+    implementation "io.netty:netty-resolver-dns-native-macos:${versions.dnsNativeMacos}"
+
+    testImplementation "org.springframework.boot:spring-boot-starter-test:${versions.springBoot}"
+    testImplementation "org.junit.jupiter:junit-jupiter:${versions.junit}"
+    testImplementation "org.mockito:mockito-core:${versions.mockito}"
+
+    compileOnly "org.projectlombok:lombok:${versions.lombok}"
+    annotationProcessor "org.projectlombok:lombok:${versions.lombok}"
+}
+
+tasks.named('test') {
+    useJUnitPlatform()
+}
